@@ -2,84 +2,81 @@ using UnityEngine;
 
 public class Bullet : MonoBehaviour
 {
-    public float moveSpeed = 8f;        // 총알 속도
-    public float homingDuration = 1.5f; // N초: 유도하는 시간
-    public float lifeTime = 5f;         // 총알 전체 수명
+    public float speed = 15f; 
 
-    private Transform player;
     private Rigidbody2D rb;
-    private float timer;
-    private bool isHoming = true;
-    private Vector2 fixedDirection;     // 유도 끝난 후 유지할 방향
+    private bool isClone = false; // 클론 여부 확인
 
     void Start()
     {
-        rb = GetComponent<Rigidbody2D>();
-
-        // Player 찾기 (Tag가 "Player"여야 함)
-        GameObject p = GameObject.FindGameObjectWithTag("Player");
-        if (p != null)
-            player = p.transform;
-
-        timer = homingDuration;
-
-        // 혹시 플레이어가 없을 수도 있으니, 없으면 앞으로 직진하게 기본 방향 설정
-        if (player != null)
+        // ★ 핵심: 이름 뒤에 "(Clone)"이 붙어있는지 확인
+        // 복제된 애들은 자동으로 이름 뒤에 (Clone)이 붙습니다.
+        if (gameObject.name.Contains("(Clone)"))
         {
-            fixedDirection = ((Vector2)player.position - rb.position).normalized;
+            isClone = true;
         }
         else
         {
-            fixedDirection = transform.right; // 그냥 오른쪽 기준
+            // 원본이라면 움직이지도, 삭제 로직을 돌지도 않게 여기서 종료
+            return; 
         }
 
-        // 최초 속도 설정
-        rb.linearVelocity = fixedDirection * moveSpeed;
+        rb = GetComponent<Rigidbody2D>();
+        
+        // 1. 플레이어 찾기
+        GameObject target = GameObject.FindGameObjectWithTag("Player");
+        Vector2 dir;
 
-        // N초 + 여유로 lifeTime 이후 파괴
-        Destroy(gameObject, lifeTime);
+        if (target != null)
+        {
+            // 2. 방향 계산
+            dir = (target.transform.position - transform.position).normalized;
+        }
+        else
+        {
+            dir = Vector2.down;
+        }
+
+        // 3. 회전
+        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
+
+        // 4. 속도 적용
+        // Unity 6.0(2023) 이상: rb.linearVelocity / 구버전: rb.velocity
+#if UNITY_6000_0_OR_NEWER
+        rb.linearVelocity = dir * speed;
+#else
+        rb.velocity = dir * speed;
+#endif
     }
 
     void Update()
     {
-        if (!isHoming)
-            return;
+        // ★ 원본이면 업데이트 로직(삭제 체크)도 실행하지 않음
+        if (!isClone) return;
 
-        timer -= Time.deltaTime;
-
-        if (player != null)
+        // 5. 화면 밖으로 나갔는지 체크하여 삭제
+        if (IsOutOfBounds())
         {
-            // 매 프레임 플레이어 방향을 다시 계산
-            Vector2 dir = ((Vector2)player.position - rb.position).normalized;
-
-            // 바로 꺾고 싶으면 그냥 dir 사용
-            fixedDirection = dir;
-            rb.linearVelocity = fixedDirection * moveSpeed;
-
-            // 부드럽게 꺾고 싶으면 아래처럼 Lerp나 Slerp로 보간 가능
-            // Vector2 newDir = Vector2.Lerp(rb.velocity.normalized, dir, 0.1f).normalized;
-            // fixedDirection = newDir;
-            // rb.velocity = newDir * moveSpeed;
+            Destroy(gameObject);
         }
+    }
 
-        // N초 지난 시점부터는 직선 모드
-        if (timer <= 0f)
-        {
-            isHoming = false;
-            rb.linearVelocity = fixedDirection * moveSpeed; // 그 순간의 방향 유지
-        }
+    // 화면 밖 판별 함수
+    bool IsOutOfBounds()
+    {
+        if (Camera.main == null) return false;
+
+        Vector3 viewPos = Camera.main.WorldToViewportPoint(transform.position);
+        return viewPos.x < -0.1f || viewPos.x > 1.1f || viewPos.y < -0.1f || viewPos.y > 1.1f;
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
-        {
-            // TODO: Player 데미지 처리
-            // other.GetComponent<PlayerHealth>()?.TakeDamage(1);
+        // ★ 원본은 충돌 처리도 안 함 (안전장치)
+        if (!isClone) return;
 
-            Destroy(gameObject);
-        }
-        else if (other.CompareTag("WALL"))
+        if (other.CompareTag("Player") || other.CompareTag("WALL"))
         {
             Destroy(gameObject);
         }

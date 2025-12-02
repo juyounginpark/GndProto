@@ -5,13 +5,14 @@ public class StringMapSpawner : MonoBehaviour
     [Header("배경 스프라이트 (맵 전체 영역)")]
     public SpriteRenderer background;   // background SpriteRenderer
 
-    [Header("CSV 파일 (WALL, ENEMY, 0)")]
+    [Header("CSV 파일 (WALL, E_A, E_B, E_C, 0)")]
     public TextAsset csvFile;
 
     [Header("프리팹")]
     public GameObject wallPrefab;
-    public GameObject enemyPrefab;      // ENEMY용
-    public GameObject enemyTopPrefab; 
+    public GameObject enemyPrefab;      // E_A: 일반 적
+    public GameObject enemyTopPrefab;   // E_B: 상단 고정 후 사격
+    public GameObject enemyDashPrefab;  // E_C: 상단 고정 후 수직 낙하 (추가됨)
 
     private string[,] mapData;
 
@@ -39,7 +40,6 @@ public class StringMapSpawner : MonoBehaviour
             {
                 string value = tokens[x].Trim();
 
-                // 빈칸이면 자동 0
                 if (string.IsNullOrEmpty(value))
                     value = "0";
 
@@ -79,12 +79,35 @@ public class StringMapSpawner : MonoBehaviour
                         prefab = wallPrefab;
                         break;
 
-                    case "ENEMY":
-                        prefab = enemyPrefab;       // 기존 일반 적
+                    case "E_A":
+                        prefab = enemyPrefab;       // 일반 적
                         break;
 
-                    case "ENEMY_TOP":
-                        prefab = enemyTopPrefab;   // 새 타입
+                    case "E_B":
+                        prefab = enemyTopPrefab;    // 사격형 적
+                        // E_B 검증 로직 (기존 유지)
+                        if (prefab != null)
+                        {
+                            EnemyTop enemyScript = prefab.GetComponent<EnemyTop>(); // 클래스 이름 주의 (EnemyTop vs TopEnemy)
+                            if (enemyScript == null || enemyScript.bulletPrefab == null)
+                            {
+                                Debug.LogError($"!!! CRITICAL: '{prefab.name}' (E_B)에 총알이나 스크립트가 없습니다!");
+                            }
+                        }
+                        else
+                        {
+                            Debug.LogError("!!! CRITICAL: enemyTopPrefab(E_B)이 비어있습니다!");
+                        }
+                        break;
+
+                    // [추가됨] 수직 낙하 적 (DashEnemy)
+                    case "E_C":
+                        prefab = enemyDashPrefab;
+                        
+                        if (prefab == null)
+                        {
+                             Debug.LogError("!!! CRITICAL: enemyDashPrefab(E_C)이 비어있습니다! Spawner를 확인하세요!");
+                        }
                         break;
 
                     default:
@@ -99,7 +122,7 @@ public class StringMapSpawner : MonoBehaviour
 
                 GameObject obj = Instantiate(prefab, spawnPos, Quaternion.identity);
 
-                // 셀 크기에 맞게 스케일 조정 (SpriteRenderer 기준)
+                // 셀 크기에 맞게 스케일 조정
                 SpriteRenderer sr = obj.GetComponent<SpriteRenderer>();
                 if (sr != null)
                 {

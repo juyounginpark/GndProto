@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;   // New Input System
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour
 {
-    public float moveSpeed = 15f;
+    public float moveSpeed = 2f;
 
     private Rigidbody2D rb;
     private float horizontalInput = 0f;

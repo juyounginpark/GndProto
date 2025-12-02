@@ -124,7 +124,7 @@ MonoBehaviour:
   leaveSpeed: 8
   offsetFromTop: 1
   destroyOffset: 2
-  bulletPrefab: {fileID: 0}
+  bulletPrefab: {fileID: 5191852433392248070, guid: fa85b26b285a30d47bf801ce12e80895, type: 3}
   attackDelay: 0.5
   afterAttackDelay: 0.5
 --- !u!61 &-1923942643311049063

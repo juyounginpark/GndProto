@@ -1,146 +1,170 @@
 using UnityEngine;
+using System.Collections.Generic;
 
-public class StringMapSpawner : MonoBehaviour
+public class InfiniteMapSpawner : MonoBehaviour
 {
-    [Header("배경 스프라이트 (맵 전체 영역)")]
-    public SpriteRenderer background;   // background SpriteRenderer
+    [Header("패턴 CSV 파일들")]
+    public TextAsset[] patternFiles; 
 
-    [Header("CSV 파일 (WALL, E_A, E_B, E_C, 0)")]
-    public TextAsset csvFile;
+    [Header("화면 맞춤 설정")]
+    public int cols = 5;                 
+    public bool fitToScreenWidth = true; 
 
-    [Header("프리팹")]
+    [Header("생성 설정")]
+    public float spawnThreshold = 20f;   
+    public float destroyDistance = 30f;  
+
+    [Header("프리팹 연결")]
     public GameObject wallPrefab;
-    public GameObject enemyPrefab;      // E_A: 일반 적
-    public GameObject enemyTopPrefab;   // E_B: 상단 고정 후 사격
-    public GameObject enemyDashPrefab;  // E_C: 상단 고정 후 수직 낙하 (추가됨)
+    public GameObject enemyPrefab;      
+    public GameObject enemyTopPrefab;   
+    public GameObject enemyDashPrefab;  
 
-    private string[,] mapData;
+    private float cellSize;             
+    private float nextSpawnY;           
+    private Transform camTransform;
+    private Queue<GameObject> activeChunks = new Queue<GameObject>(); 
 
     void Start()
     {
-        LoadCSV();
-        SpawnMapOnBackground();
+        camTransform = Camera.main.transform;
+        
+        if (cols <= 0) cols = 5;
+
+        CalculateCellSize();
+        nextSpawnY = camTransform.position.y; 
+
+        SpawnRandomPattern(); // 테스트를 위해 1개만 먼저 생성
     }
 
-    void LoadCSV()
+    void Update()
     {
-        string[] lines = csvFile.text.Trim().Split('\n');
+        if (camTransform == null) return;
 
-        int rows = lines.Length;
-        int cols = lines[0].Trim().Replace("\r", "").Split(',').Length;
-
-        mapData = new string[rows, cols];
-
-        for (int y = 0; y < rows; y++)
+        if (camTransform.position.y - spawnThreshold < nextSpawnY)
         {
-            string line = lines[y].Trim().Replace("\r", "");
-            string[] tokens = line.Split(',');
+            SpawnRandomPattern();
+        }
 
-            for (int x = 0; x < cols; x++)
+        if (activeChunks.Count > 0)
+        {
+            GameObject oldestChunk = activeChunks.Peek();
+            if (oldestChunk.transform.position.y > camTransform.position.y + destroyDistance)
             {
-                string value = tokens[x].Trim();
-
-                if (string.IsNullOrEmpty(value))
-                    value = "0";
-
-                mapData[y, x] = value;
+                Destroy(activeChunks.Dequeue());
             }
         }
     }
 
-    void SpawnMapOnBackground()
+    void CalculateCellSize()
     {
-        int rows = mapData.GetLength(0);
-        int cols = mapData.GetLength(1);
-
-        Bounds bgBounds = background.bounds;
-        Vector3 bottomLeft = bgBounds.min;
-        float bgWidth = bgBounds.size.x;
-        float bgHeight = bgBounds.size.y;
-
-        float cellWidth = bgWidth / cols;
-        float cellHeight = bgHeight / rows;
-
-        for (int y = 0; y < rows; y++)
+        if (fitToScreenWidth)
         {
-            for (int x = 0; x < cols; x++)
+            float screenHeightUnits = Camera.main.orthographicSize * 2f;
+            float screenWidthUnits = screenHeightUnits * Camera.main.aspect;
+            cellSize = screenWidthUnits / cols;
+        }
+        else
+        {
+            cellSize = 1f;
+        }
+    }
+
+    void SpawnRandomPattern()
+    {
+        if (patternFiles.Length == 0) return;
+
+        int idx = Random.Range(0, patternFiles.Length);
+        TextAsset csv = patternFiles[idx];
+
+        GameObject chunk = new GameObject($"MapChunk_{nextSpawnY:F1}");
+        chunk.transform.position = new Vector3(0, nextSpawnY, 0);
+
+        float patternHeight = GenerateObjectsInChunk(chunk, csv);
+
+        activeChunks.Enqueue(chunk);
+        nextSpawnY -= patternHeight; 
+    }
+
+    // ★ 여기가 문제입니다! 디버깅 로그를 추가했습니다.
+    float GenerateObjectsInChunk(GameObject chunkParent, TextAsset csv)
+    {
+        // 1. 줄바꿈 문자(\r) 완벽 제거 후 줄 단위 분리
+        string cleanText = csv.text.Replace("\r", ""); 
+        string[] lines = cleanText.Split('\n');
+        int rows = lines.Length;
+
+        float mapWidth = cols * cellSize;
+        float startX = -mapWidth / 2f;
+
+        Debug.Log($"[CSV 분석 시작] 파일명: {csv.name}, 총 줄 수: {rows}, 설정된 Cols: {cols}");
+
+        for (int r = 0; r < rows; r++)
+        {
+            string line = lines[r].Trim(); // 앞뒤 공백 제거
+            if (string.IsNullOrEmpty(line)) continue; // 빈 줄 건너뜀
+
+            string[] tokens = line.Split(',');
+
+            // Debug.Log($"-> {r}번째 줄 내용: {line} (칸 수: {tokens.Length})");
+
+            for (int c = 0; c < tokens.Length && c < cols; c++)
             {
-                string raw = mapData[y, x];
-                string token = raw.Trim().ToUpperInvariant();
+                // 2. 각 칸의 공백 완벽 제거 및 대문자 변환
+                string token = tokens[c].Trim().ToUpperInvariant();
 
-                if (string.IsNullOrEmpty(token) || token == "0")
-                    continue;
+                // 빈 칸이나 0은 무시
+                if (string.IsNullOrEmpty(token) || token == "0") continue;
 
-                GameObject prefab = null;
+                // Debug.Log($"   [{r},{c}] 읽은 데이터: '{token}'"); // 데이터 확인용
 
-                switch (token)
+                float posX = startX + (c * cellSize) + (cellSize * 0.5f);
+                float posY = -(r * cellSize) - (cellSize * 0.5f);
+
+                GameObject prefab = GetPrefabByToken(token);
+                
+                if (prefab != null)
                 {
-                    case "WALL":
-                        prefab = wallPrefab;
-                        break;
+                    GameObject obj = Instantiate(prefab, chunkParent.transform);
+                    obj.transform.localPosition = new Vector3(posX, posY, -5f); // Z축 앞으로
 
-                    case "E_A":
-                        prefab = enemyPrefab;       // 일반 적
-                        break;
-
-                    case "E_B":
-                        prefab = enemyTopPrefab;    // 사격형 적
-                        // E_B 검증 로직 (기존 유지)
-                        if (prefab != null)
-                        {
-                            EnemyTop enemyScript = prefab.GetComponent<EnemyTop>(); // 클래스 이름 주의 (EnemyTop vs TopEnemy)
-                            if (enemyScript == null || enemyScript.bulletPrefab == null)
-                            {
-                                Debug.LogError($"!!! CRITICAL: '{prefab.name}' (E_B)에 총알이나 스크립트가 없습니다!");
-                            }
-                        }
-                        else
-                        {
-                            Debug.LogError("!!! CRITICAL: enemyTopPrefab(E_B)이 비어있습니다!");
-                        }
-                        break;
-
-                    // [추가됨] 수직 낙하 적 (DashEnemy)
-                    case "E_C":
-                        prefab = enemyDashPrefab;
-                        
-                        if (prefab == null)
-                        {
-                             Debug.LogError("!!! CRITICAL: enemyDashPrefab(E_C)이 비어있습니다! Spawner를 확인하세요!");
-                        }
-                        break;
-
-                    default:
-                        continue;
-                }
-
-                if (prefab == null) continue;
-
-                float centerX = bottomLeft.x + cellWidth * (x + 0.5f);
-                float centerY = bottomLeft.y + cellHeight * (y + 0.5f);
-                Vector3 spawnPos = new Vector3(centerX, centerY, 0f);
-
-                GameObject obj = Instantiate(prefab, spawnPos, Quaternion.identity);
-
-                // 셀 크기에 맞게 스케일 조정
-                SpriteRenderer sr = obj.GetComponent<SpriteRenderer>();
-                if (sr != null)
-                {
-                    Vector2 spriteSize = sr.bounds.size;
-
-                    if (spriteSize.x > 0 && spriteSize.y > 0)
+                    // 스케일 조정
+                    SpriteRenderer sr = obj.GetComponent<SpriteRenderer>();
+                    if (sr != null)
                     {
-                        float scaleX = cellWidth / spriteSize.x;
-                        float scaleY = cellHeight / spriteSize.y;
-
-                        obj.transform.localScale = new Vector3(
-                            obj.transform.localScale.x * scaleX,
-                            obj.transform.localScale.y * scaleY,
-                            obj.transform.localScale.z
-                        );
+                        obj.transform.localScale = Vector3.one; 
+                        Vector2 spriteSize = sr.bounds.size;
+                        if (spriteSize.x > 0 && spriteSize.y > 0)
+                        {
+                            obj.transform.localScale = new Vector3(cellSize / spriteSize.x, cellSize / spriteSize.y, 1f);
+                        }
                     }
                 }
+                else
+                {
+                    // ★ 프리팹을 못 찾았을 때 경고 띄우기
+                    Debug.LogWarning($"!!! 경고: '{token}'에 해당하는 프리팹을 찾지 못했습니다! 스위치문을 확인하세요.");
+                }
             }
+        }
+        return rows * cellSize;
+    }
+
+    GameObject GetPrefabByToken(string token)
+    {
+        // 공백이 혹시라도 있을까봐 한 번 더 제거
+        token = token.Trim(); 
+
+        switch (token)
+        {
+            case "WALL": return wallPrefab;
+            case "E_A": return enemyPrefab;
+            case "E_B": return enemyTopPrefab;
+            case "E_C": return enemyDashPrefab;
+            default: 
+                // 알 수 없는 문자가 들어오면 로그 출력
+                // Debug.Log($"알 수 없는 토큰: {token}");
+                return null;
         }
     }
 }

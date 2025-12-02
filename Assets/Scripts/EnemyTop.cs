@@ -14,56 +14,48 @@ public class EnemyTop : MonoBehaviour
     public float afterAttackDelay = 0.5f;
 
     private Transform cam;
-    private enum State { Idle, Rising, Holding, Leaving } // Idle 상태 추가
-    private State state = State.Idle; // Idle에서 시작
+    private enum State { Idle, Rising, Holding, Leaving }
+    private State state = State.Idle;
+    
     private float timer;
     private bool hasFired = false;
-    private bool isActivated = false; // Update 중복 진입 방지 플래그
 
     void Start()
     {
         cam = Camera.main.transform;
-        
-        // 1. 프리팹 연결 체크
-        if (bulletPrefab == null)
-        {
-            Debug.LogError("!!! 총알 프리팹이 연결되지 않았습니다 !!! Inspector를 확인하세요.");
-        }
+        // 배경 앞으로 튀어나오게 Z축 고정
+        transform.position = new Vector3(transform.position.x, transform.position.y, -5f);
     }
 
     void Update()
     {
         if (cam == null) return;
 
-        // 아직 활성화되지 않았다면, 카메라 뷰에 들어왔는지 계속 체크
-        if (!isActivated)
+        float camTopY = cam.position.y + Camera.main.orthographicSize;
+        float camBottomY = cam.position.y - Camera.main.orthographicSize;
+
+        // --- 1. 대기 상태 ---
+        if (state == State.Idle)
         {
-            float camBottomY = cam.position.y - Camera.main.orthographicSize;
-            if (transform.position.y > camBottomY)
+            // 화면 안으로 들어오면 시작
+            if (transform.position.y > camBottomY - 1f)
             {
-                isActivated = true; // 활성화!
                 state = State.Rising;
             }
-            else
-            {
-                return; // 아직 활성화될 때가 아니면 아무것도 안 함
-            }
+            return; // 절대 삭제하지 않음
         }
 
-        // --- 활성화된 후의 로직 ---
-        
-        float camTopY = cam.position.y + Camera.main.orthographicSize;
+        // --- 2. 활동 상태 ---
+        float targetY = camTopY - offsetFromTop;
 
         switch (state)
         {
             case State.Rising:
-                float targetY = camTopY - offsetFromTop;
                 Vector3 pos = transform.position;
                 pos.y = Mathf.MoveTowards(pos.y, targetY, riseSpeed * Time.deltaTime);
                 transform.position = pos;
 
-                float distance = Mathf.Abs(pos.y - targetY);
-                if (distance < 1.0f) 
+                if (Mathf.Abs(pos.y - targetY) < 0.5f)
                 {
                     state = State.Holding;
                     timer = attackDelay;
@@ -71,27 +63,22 @@ public class EnemyTop : MonoBehaviour
                 break;
 
             case State.Holding:
-                targetY = camTopY - offsetFromTop;
                 transform.position = new Vector3(transform.position.x, targetY, transform.position.z);
-
+                
                 timer -= Time.deltaTime;
-
                 if (timer <= 0f && !hasFired)
                 {
                     FireBullet();
                     hasFired = true;
                     timer = afterAttackDelay;
                 }
-
-                if (hasFired && timer <= 0f)
-                {
-                    state = State.Leaving;
-                }
+                if (hasFired && timer <= 0f) state = State.Leaving;
                 break;
 
             case State.Leaving:
-                transform.Translate(Vector3.up * leaveSpeed * Time.deltaTime);
+                transform.Translate(Vector3.up * leaveSpeed * Time.deltaTime, Space.World);
 
+                // ★ 중요: 퇴장 중일 때만 삭제 체크!
                 if (transform.position.y > camTopY + destroyOffset)
                 {
                     Destroy(gameObject);
@@ -102,17 +89,7 @@ public class EnemyTop : MonoBehaviour
 
     void FireBullet()
     {
-        // 2. 발사 시점에 로그 출력
-        Debug.Log("총알 발사 함수 호출됨!"); 
-
         if (bulletPrefab != null)
-        {
             Instantiate(bulletPrefab, transform.position, Quaternion.identity);
-            Debug.Log(">>> 총알 생성 성공!");
-        }
-        else
-        {
-            Debug.LogError("!!! 총알을 생성하려 했으나 프리팹이 없습니다 !!!");
-        }
     }
 }

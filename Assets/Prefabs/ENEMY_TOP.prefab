@@ -127,6 +127,7 @@ MonoBehaviour:
   bulletPrefab: {fileID: 5191852433392248070, guid: fa85b26b285a30d47bf801ce12e80895, type: 3}
   attackDelay: 0.5
   afterAttackDelay: 0.5
+  bounceForce: 50
 --- !u!61 &-1923942643311049063
 BoxCollider2D:
   m_ObjectHideFlags: 0

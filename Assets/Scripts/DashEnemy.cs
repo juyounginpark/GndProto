@@ -75,9 +75,42 @@ public class DashEnemy : MonoBehaviour
         }
     }
     
-    // 플레이어 충돌 시 삭제
+    // 변수 선언부에 추가
+    [Header("피격 설정")]
+    public float bounceForce = 15f; // DashEnemy보다는 가볍게 설정 추천
+
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player")) Destroy(gameObject);
+        // if (!isClone) return; // (이름 체크 로직 사용 시 유지)
+
+        if (other.CompareTag("Player"))
+        {
+            PlayerGuard guard = other.GetComponent<PlayerGuard>();
+
+            if (guard != null && guard.IsGuarding)
+            {
+                // 1. AI 정지
+                this.enabled = false; 
+                GetComponent<Collider2D>().enabled = false;
+
+                // 2. 튕겨내기
+                Rigidbody2D rb = GetComponent<Rigidbody2D>();
+                if (rb != null)
+                {
+                    rb.linearVelocity = Vector2.zero; 
+                    Vector2 dir = (transform.position - other.transform.position).normalized;
+                    
+                    // 위쪽이나 옆으로 더 잘 날아가게 약간 보정 (선택)
+                    // dir += Vector2.up * 0.5f; 
+                    
+                    rb.AddForce(dir * bounceForce, ForceMode2D.Impulse);
+                    rb.angularVelocity = Random.Range(-300f, 300f);
+                }
+
+                // 3. 지연 삭제
+                Destroy(gameObject, 2f);
+            }
+            // 플레이어 충돌 로직 (필요 시 작성)
+        }
     }
 }

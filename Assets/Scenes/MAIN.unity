@@ -648,7 +648,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea35b3a30779f9a4a87077cf39a752fd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraFollow
-  normalSpeed: 10
+  normalSpeed: 15
   glideSpeed: 5
 --- !u!114 &2116892825
 MonoBehaviour:

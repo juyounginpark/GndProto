@@ -124,7 +124,7 @@ MonoBehaviour:
   offsetFromTop: 1.5
   holdDuration: 1
   dashSpeed: 30
-  destroyOffset: 3
+  destroyOffset: 8
   bounceForce: 100
 --- !u!50 &-7947634494762041694
 Rigidbody2D:

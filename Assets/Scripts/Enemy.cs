@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
+[RequireComponent(typeof(EnemyHealth))]
 public class Enemy : MonoBehaviour
 {
     public float explodeScale = 2f;   // 얼마나 커질지
@@ -8,19 +9,28 @@ public class Enemy : MonoBehaviour
 
     private bool isDead = false;
     private SpriteRenderer sr;
+    private EnemyHealth health;
 
     void Awake()
     {
         sr = GetComponent<SpriteRenderer>();
+        health = GetComponent<EnemyHealth>();
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (!isDead && other.CompareTag("Player"))
         {
-            isDead = true;
-            StartCoroutine(ExplodeCoroutine());
+            // 플레이어에게 닿으면 1 데미지
+            health.TakeDamage(1);
         }
+    }
+
+    public void OnDeath()
+    {
+        if (isDead) return;
+        isDead = true;
+        StartCoroutine(ExplodeCoroutine());
     }
 
     IEnumerator ExplodeCoroutine()

@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 4682364894565983772}
   - component: {fileID: -1923942643311049063}
   - component: {fileID: 5059995272596173126}
+  - component: {fileID: 5817539897153149603}
   m_Layer: 0
   m_Name: ENEMY_TOP
   m_TagString: Untagged
@@ -120,8 +121,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 049d47b6e62c4ed47b5d6b12728bf3b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyTop
-  riseSpeed: 5
-  leaveSpeed: 8
+  riseSpeed: 10
+  leaveSpeed: 12
   offsetFromTop: 1
   destroyOffset: 2
   bulletPrefab: {fileID: 5191852433392248070, guid: fa85b26b285a30d47bf801ce12e80895, type: 3}
@@ -201,3 +202,22 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &5817539897153149603
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2248103540649661002}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1ed00d6422f495428d1b445d42668dd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyHealth
+  maxHealth: 2
+  currentHealth: 0
+  healthBarOffset: {x: 0, y: -0.6, z: 0}
+  healthBarSize: {x: 0.8, y: 0.1}
+  bgColor: {r: 0.2, g: 0.2, b: 0.2, a: 0.8}
+  healthColor: {r: 0, g: 1, b: 0, a: 1}
+  lowHealthColor: {r: 1, g: 0, b: 0, a: 1}

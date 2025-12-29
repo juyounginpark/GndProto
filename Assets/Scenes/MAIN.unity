@@ -341,12 +341,16 @@ MonoBehaviour:
   tokenPrefabTable:
   - token: WALL
     prefab: {fileID: 9153869203669829528, guid: 4e85d104f2d864a46bee809147777f63, type: 3}
+    health: 1000
   - token: E_A
     prefab: {fileID: 6446787845820227676, guid: 5b3bc38aec58d8f44bef1ee8614c97e5, type: 3}
+    health: 2
   - token: E_B
     prefab: {fileID: 2248103540649661002, guid: 30ca862f87b571e4aae1b196fdbee20b, type: 3}
+    health: 2
   - token: E_C
     prefab: {fileID: 5034809259273897048, guid: 47010850338cb0341af7711b28bfb38e, type: 3}
+    health: 2
 --- !u!4 &1360793369
 Transform:
   m_ObjectHideFlags: 0
@@ -544,7 +548,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: -0.053205192, y: -0.041083574}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -554,7 +558,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1, y: 2}
+  m_Size: {x: 1.709402, y: 2.3122344}
   m_EdgeRadius: 0
 --- !u!1 &2116892820
 GameObject:
@@ -759,11 +763,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5801120463038264691, guid: 4e85d104f2d864a46bee809147777f63, type: 3}
       propertyPath: m_Size.y
-      value: 1.1154151
+      value: 4.212387
       objectReference: {fileID: 0}
     - target: {fileID: 5801120463038264691, guid: 4e85d104f2d864a46bee809147777f63, type: 3}
       propertyPath: m_Offset.y
-      value: 0.02401328
+      value: -0.074490905
       objectReference: {fileID: 0}
     - target: {fileID: 8162536125472804282, guid: 4e85d104f2d864a46bee809147777f63, type: 3}
       propertyPath: m_BodyType

@@ -12,23 +12,45 @@ public class EnemyHealth : MonoBehaviour
     public Color bgColor = new Color(0.2f, 0.2f, 0.2f, 0.8f);
     public Color healthColor = Color.green;
     public Color lowHealthColor = Color.red;
+    public float showDuration = 1.5f;  // 체력바 표시 시간
 
     private GameObject healthBarBg;
     private GameObject healthBarFill;
     private SpriteRenderer fillRenderer;
+    private float hideTimer = 0f;
 
     void Start()
     {
         currentHealth = maxHealth;
         CreateHealthBar();
+        // 처음에는 숨김
+        SetHealthBarVisible(false);
     }
 
     void LateUpdate()
     {
-        // 체력바가 적을 따라다니도록 (적의 스케일에 영향받지 않음)
+        // 체력바가 적을 따라다니도록
         if (healthBarBg != null)
         {
             healthBarBg.transform.position = transform.position + healthBarOffset;
+        }
+
+        // 타이머로 체력바 숨기기
+        if (hideTimer > 0f)
+        {
+            hideTimer -= Time.deltaTime;
+            if (hideTimer <= 0f)
+            {
+                SetHealthBarVisible(false);
+            }
+        }
+    }
+
+    void SetHealthBarVisible(bool visible)
+    {
+        if (healthBarBg != null)
+        {
+            healthBarBg.SetActive(visible);
         }
     }
 
@@ -70,6 +92,10 @@ public class EnemyHealth : MonoBehaviour
     {
         currentHealth -= damage;
         UpdateHealthBar();
+
+        // 피격 시 체력바 표시
+        SetHealthBarVisible(true);
+        hideTimer = showDuration;
 
         if (currentHealth <= 0)
         {

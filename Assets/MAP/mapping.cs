@@ -19,6 +19,7 @@ public class InfiniteMapSpawner : MonoBehaviour
 
     private float cellSize;
     private Dictionary<string, GameObject> tokenToPrefab;
+    private Dictionary<string, int> tokenToHealth;
     private float nextSpawnY;
     private float cameraY;              // 카메라 고정 y좌표
     private Queue<GameObject> activeChunks = new Queue<GameObject>();
@@ -31,12 +32,14 @@ public class InfiniteMapSpawner : MonoBehaviour
 
         // 토큰-프리팹 딕셔너리 초기화
         tokenToPrefab = new Dictionary<string, GameObject>();
+        tokenToHealth = new Dictionary<string, int>();
         foreach (var entry in tokenPrefabTable)
         {
             if (!string.IsNullOrEmpty(entry.token) && entry.prefab != null)
             {
                 string key = entry.token.Trim().ToUpperInvariant();
                 tokenToPrefab[key] = entry.prefab;
+                tokenToHealth[key] = entry.health;
             }
         }
 
@@ -151,6 +154,14 @@ public class InfiniteMapSpawner : MonoBehaviour
                         {
                             obj.transform.localScale = new Vector3(cellSize / spriteSize.x, cellSize / spriteSize.y, 1f);
                         }
+                    }
+
+                    // 체력 설정
+                    EnemyHealth enemyHealth = obj.GetComponent<EnemyHealth>();
+                    if (enemyHealth != null && tokenToHealth.TryGetValue(token, out int health))
+                    {
+                        enemyHealth.maxHealth = health;
+                        enemyHealth.currentHealth = health;
                     }
                 }
             }
